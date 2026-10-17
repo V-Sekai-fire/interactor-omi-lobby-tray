@@ -276,8 +276,11 @@ private:
 int list(const std::string& lobby)
 {
 #if defined(_WIN32)
-    // A GUI program has no console of its own; borrow the shell's.
-    if (AttachConsole(ATTACH_PARENT_PROCESS))
+    // A GUI program has no console of its own. Output redirected to a pipe or file already works;
+    // otherwise borrow the shell's console.
+    const HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
+    const bool redirected = out != nullptr && out != INVALID_HANDLE_VALUE && GetFileType(out) != FILE_TYPE_UNKNOWN;
+    if (!redirected && AttachConsole(ATTACH_PARENT_PROCESS))
     {
         std::freopen("CONOUT$", "w", stdout);
         std::freopen("CONOUT$", "w", stderr);
