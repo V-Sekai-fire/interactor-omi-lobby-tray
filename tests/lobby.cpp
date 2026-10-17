@@ -4,6 +4,9 @@
 // GET /api/v1/lobby/servers. One test per name, so CTest reports each.
 
 #include "Lobby.h"
+#include "Overte.h"
+
+#include <filesystem>
 
 #include <cstdio>
 #include <cstring>
@@ -108,6 +111,35 @@ void lobbyChoice()
     check(chooseLobby({}, "not json") == DefaultLobby, "an unreadable file falls back to the default");
 }
 
+void hifiCommand()
+{
+    check(hifiOpenCommand(R"(C:\Program Files\Overte\interface.exe)") ==
+              R"("C:\Program Files\Overte\interface.exe" --url "%1")",
+          "the installer's open command, with the path quoted");
+}
+
+void findsInterface()
+{
+    namespace fs = std::filesystem;
+    const fs::path root = fs::temp_directory_path() / "omi-lobby-tray-find";
+    fs::remove_all(root);
+    const auto touch = [](const fs::path& file) {
+        fs::create_directories(file.parent_path());
+        std::ofstream(file) << "x";
+    };
+    touch(root / "a" / "Overte" / "interface.exe");
+    touch(root / "b" / "Overte Beta" / "interface.exe");
+    touch(root / "a" / "NotOverte" / "interface.exe");
+    fs::create_directories(root / "a" / "Overte Empty");
+    const auto found = findInterface({root / "a", root / "b", root / "missing"});
+    check(found.size() == 2, "both Overte folders with Interface are found, and nothing else");
+    check(found.size() == 2 && found[0] == root / "a" / "Overte" / "interface.exe" &&
+              found[1] == root / "b" / "Overte Beta" / "interface.exe",
+          "found in path order");
+    check(findInterface({root / "missing"}).empty(), "a missing folder finds nothing");
+    fs::remove_all(root);
+}
+
 } // namespace
 
 int main(int argc, char** argv)
@@ -123,6 +155,8 @@ int main(int argc, char** argv)
         {"lobby.labels-show-players", labelsShowPlayers},
         {"lobby.join-links", joinLinks},
         {"lobby.lobby-choice", lobbyChoice},
+        {"overte.hifi-command", hifiCommand},
+        {"overte.finds-interface", findsInterface},
     };
     bool ran = false;
     for (const auto& t : tests)

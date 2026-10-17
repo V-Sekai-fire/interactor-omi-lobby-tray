@@ -9,7 +9,7 @@ option(OMI_LOBBY_TRAY_APP "Build the tray program (fetches SDL3)" ON)
 
 enable_testing()
 
-add_library(lobby STATIC src/Lobby.cpp src/Json.cpp)
+add_library(lobby STATIC src/Lobby.cpp src/Json.cpp src/Overte.cpp)
 target_include_directories(lobby PUBLIC src)
 
 add_executable(lobby-tests tests/lobby.cpp)
@@ -17,7 +17,7 @@ target_link_libraries(lobby-tests PRIVATE lobby)
 target_compile_definitions(lobby-tests PRIVATE LOBBY_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/tests/servers.json")
 foreach(name IN ITEMS lobby.parses-the-lobby-answer lobby.refuses-what-is-not-a-list
                       lobby.down-and-other-platforms-left-out lobby.labels-show-players lobby.join-links
-                      lobby.lobby-choice)
+                      lobby.lobby-choice overte.hifi-command overte.finds-interface)
     add_test(NAME ${name} COMMAND lobby-tests ${name})
 endforeach()
 # A name the runner does not know must fail, so a renamed test cannot pass by running nothing.
