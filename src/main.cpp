@@ -6,12 +6,14 @@
 
 #include "Fetch.h"
 #include "Lobby.h"
+#include "Overte.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
 #include <atomic>
 #include <cstdio>
+#include <filesystem>
 #include <fstream>
 #include <iterator>
 #include <memory>
@@ -110,6 +112,58 @@ bool hasUrlHandler(const std::string& url)
 #endif
 }
 
+#if defined(_WIN32)
+
+std::wstring wide(const std::string& s)
+{
+    if (s.empty())
+        return {};
+    const int n = MultiByteToWideChar(CP_UTF8, 0, s.data(), int(s.size()), nullptr, 0);
+    std::wstring out(size_t(n), L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, s.data(), int(s.size()), out.data(), n);
+    return out;
+}
+
+bool setValue(const std::wstring& key, const wchar_t* name, const std::string& value)
+{
+    const std::wstring text = wide(value);
+    return RegSetKeyValueW(HKEY_CURRENT_USER, key.c_str(), name, REG_SZ, text.c_str(),
+                           DWORD((text.size() + 1) * sizeof(wchar_t))) == ERROR_SUCCESS;
+}
+
+#endif
+
+// Registers hifi:// for this user only (HKCU\Software\Classes, no administrator prompt) with the entries
+// Overte's installer writes, pointing at interfaceExe.
+bool registerHifi(const std::string& interfaceExe, std::string& error)
+{
+#if defined(_WIN32)
+    const std::wstring key = L"Software\\Classes\\hifi";
+    const bool ok = setValue(key, nullptr, "URL:Overte Protocol") && setValue(key, L"URL Protocol", "") &&
+                    setValue(key + L"\\DefaultIcon", nullptr, interfaceExe + ",1") &&
+                    setValue(key + L"\\shell\\open\\command", nullptr, hifiOpenCommand(interfaceExe));
+    if (!ok)
+        error = "could not write the hifi:// registry keys";
+    return ok;
+#else
+    (void)interfaceExe;
+    error = "setting up hifi:// links is Windows only";
+    return false;
+#endif
+}
+
+// Where Overte installs: Program Files, Program Files (x86) and the per-user Programs folder.
+std::vector<std::filesystem::path> interfaceRoots()
+{
+    std::vector<std::filesystem::path> roots;
+    for (const char* name : {"ProgramFiles", "ProgramFiles(x86)", "ProgramW6432"})
+        if (const char* value = SDL_getenv(name))
+            roots.emplace_back(value);
+    if (const char* local = SDL_getenv("LOCALAPPDATA"))
+        roots.push_back(std::filesystem::path(local) / "Programs");
+    return roots;
+}
+
 class LobbyTray;
 
 struct Target
@@ -124,6 +178,7 @@ enum Command
     Join,
     Refresh,
     OpenPage,
+    SetUpOverteLinks,
     Quit,
 };
 
@@ -151,6 +206,8 @@ public:
         SDL_InsertTrayEntryAt(menu, -1, nullptr, 0);
         addCommand(menu, "Refresh now", Refresh);
         addCommand(menu, "Open the lobby page", OpenPage);
+        overteLinks_ = addCommand(menu, "Set up Overte links...", SetUpOverteLinks);
+        showOverteLinks();
         SDL_InsertTrayEntryAt(menu, -1, nullptr, 0);
         addCommand(menu, "Quit", Quit);
         refresh();
@@ -170,6 +227,13 @@ public:
     // Shows a finished fetch, and asks again once the lobby has polled again.
     void poll()
     {
+        std::string picked;
+        {
+            std::lock_guard<std::mutex> lock(pickedMutex_);
+            picked.swap(picked_);
+        }
+        if (!picked.empty())
+            useInterface(picked);
         if (SDL_GetTicks() - lastFetchMs_ >= RefreshMs)
             refresh();
         std::vector<Server> servers;
@@ -186,11 +250,54 @@ public:
     }
 
 private:
-    void addCommand(SDL_TrayMenu* menu, const char* text, Command command)
+    SDL_TrayEntry* addCommand(SDL_TrayMenu* menu, const char* text, Command command)
     {
         SDL_TrayEntry* entry = SDL_InsertTrayEntryAt(menu, -1, text, SDL_TRAYENTRY_BUTTON);
         targets_.push_back(std::make_unique<Target>(Target{this, command, {}}));
         SDL_SetTrayEntryCallback(entry, &LobbyTray::onEntry, targets_.back().get());
+        return entry;
+    }
+
+    void showOverteLinks()
+    {
+        SDL_SetTrayEntryLabel(overteLinks_, hasUrlHandler("hifi://") ? "Overte links: set up (pick Interface again...)"
+                                                                     : "Set up Overte links...");
+    }
+
+    void useInterface(const std::string& exe)
+    {
+        std::string error;
+        if (registerHifi(exe, error))
+            SDL_SetTrayEntryLabel(message_, ("Overte links open " + exe).c_str());
+        else
+            SDL_SetTrayEntryLabel(message_, ("Overte links not set up: " + error).c_str());
+        showOverteLinks();
+    }
+
+    // An Overte install found in the usual folders is used at once; otherwise the player picks
+    // interface.exe. A second pick (the entry once links work) always asks.
+    void setUpOverteLinks()
+    {
+        const auto found = findInterface(interfaceRoots());
+        if (!found.empty() && !hasUrlHandler("hifi://"))
+        {
+            useInterface(found.front().string());
+            return;
+        }
+        static const SDL_DialogFileFilter filters[] = {{"Overte Interface (interface.exe)", "exe"}};
+        const std::string start = found.empty() ? std::string() : found.front().parent_path().string();
+        SDL_ShowOpenFileDialog(&LobbyTray::onInterfaceChosen, this, nullptr, filters, 1,
+                               start.empty() ? nullptr : start.c_str(), false);
+    }
+
+    // The dialog may answer on another thread; the main thread applies the pick in poll().
+    static void onInterfaceChosen(void* userdata, const char* const* files, int)
+    {
+        LobbyTray* app = static_cast<LobbyTray*>(userdata);
+        if (files == nullptr || files[0] == nullptr)
+            return;
+        std::lock_guard<std::mutex> lock(app->pickedMutex_);
+        app->picked_ = files[0];
     }
 
     void refresh()
@@ -252,7 +359,7 @@ private:
         }
         SDL_SetClipboardText(s.address.c_str());
         const std::string client = s.platform == "overte" ? "Overte" : s.platform == "basis" ? "Basis" : s.platform;
-        const std::string why = url.empty() ? "" : client + " is not installed: ";
+        const std::string why = url.empty() ? "" : client + " links are not set up: ";
         SDL_SetTrayEntryLabel(message_, (why + "copied " + s.address + "; paste it into " + client).c_str());
     }
 
@@ -271,6 +378,9 @@ private:
         case OpenPage:
             SDL_OpenURL(app->lobby_.c_str());
             break;
+        case SetUpOverteLinks:
+            app->setUpOverteLinks();
+            break;
         case Quit:
             app->quit_ = true;
             break;
@@ -282,6 +392,9 @@ private:
     SDL_Tray* tray_ = nullptr;
     SDL_TrayEntry* status_ = nullptr;
     SDL_TrayEntry* message_ = nullptr;
+    SDL_TrayEntry* overteLinks_ = nullptr;
+    std::mutex pickedMutex_;
+    std::string picked_;
     SDL_TrayEntry* platformEntries_[std::size(Platforms)] = {};
     SDL_Surface* idleIcon_ = nullptr;
     SDL_Surface* busyIcon_ = nullptr;
