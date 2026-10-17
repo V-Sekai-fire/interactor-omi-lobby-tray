@@ -1,0 +1,49 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  windows:
+    runs-on: windows-2025
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - name: Configure
+        run: cmake -S . -B build -A x64
+      - name: Build
+        run: cmake --build build --config Release --parallel
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Package
+        shell: pwsh
+        run: |
+          cmake --install build --config Release --prefix omi-lobby-tray
+          Compress-Archive -Path omi-lobby-tray/* -DestinationPath omi-lobby-tray-windows-x64.zip
+      # Every run's program, so a pull request's tray can be tried on a desk before it merges.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: omi-lobby-tray-windows-x64
+          path: omi-lobby-tray-windows-x64.zip
+          retention-days: 14
+      - name: Tray run, unchecked
+        run: echo "UNCHECKED 1 - the tray is built and its list logic tested; no desktop session shows the icon here"
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes ""
+          gh release upload "$GITHUB_REF_NAME" omi-lobby-tray-windows-x64.zip --clobber
