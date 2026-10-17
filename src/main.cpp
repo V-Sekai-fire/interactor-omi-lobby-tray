@@ -91,6 +91,25 @@ void startFetch(const std::shared_ptr<Fetched>& fetched, const std::string& url)
     }).detach();
 }
 
+// Whether a program is registered for the link's scheme. Windows reports a link with no handler as
+// opened, so without this check an Overte pick on a desk with no Overte would do nothing.
+bool hasUrlHandler(const std::string& url)
+{
+#if defined(_WIN32)
+    const std::string scheme = url.substr(0, url.find(':'));
+    const std::wstring key(scheme.begin(), scheme.end());
+    HKEY handle = nullptr;
+    if (RegOpenKeyExW(HKEY_CLASSES_ROOT, key.c_str(), 0, KEY_READ, &handle) != ERROR_SUCCESS)
+        return false;
+    const bool isProtocol = RegQueryValueExW(handle, L"URL Protocol", nullptr, nullptr, nullptr, nullptr) == ERROR_SUCCESS;
+    RegCloseKey(handle);
+    return isProtocol;
+#else
+    (void)url;
+    return true;
+#endif
+}
+
 class LobbyTray;
 
 struct Target
@@ -122,7 +141,7 @@ public:
             return;
         SDL_TrayMenu* menu = SDL_CreateTrayMenu(tray_);
         status_ = SDL_InsertTrayEntryAt(menu, -1, "Asking the lobby...", SDL_TRAYENTRY_BUTTON | SDL_TRAYENTRY_DISABLED);
-        message_ = SDL_InsertTrayEntryAt(menu, -1, "", SDL_TRAYENTRY_BUTTON | SDL_TRAYENTRY_DISABLED);
+        message_ = SDL_InsertTrayEntryAt(menu, -1, "Pick a server to join it", SDL_TRAYENTRY_BUTTON | SDL_TRAYENTRY_DISABLED);
         SDL_InsertTrayEntryAt(menu, -1, nullptr, 0);
         for (size_t i = 0; i < std::size(Platforms); ++i)
         {
@@ -226,14 +245,14 @@ private:
     void join(const Server& s)
     {
         const std::string url = joinUrl(s);
-        if (!url.empty() && SDL_OpenURL(url.c_str()))
+        if (!url.empty() && hasUrlHandler(url) && SDL_OpenURL(url.c_str()))
         {
             SDL_SetTrayEntryLabel(message_, ("Opened " + url).c_str());
             return;
         }
         SDL_SetClipboardText(s.address.c_str());
         const std::string client = s.platform == "overte" ? "Overte" : s.platform == "basis" ? "Basis" : s.platform;
-        const std::string why = url.empty() ? "" : client + " did not open: ";
+        const std::string why = url.empty() ? "" : client + " is not installed: ";
         SDL_SetTrayEntryLabel(message_, (why + "copied " + s.address + "; paste it into " + client).c_str());
     }
 

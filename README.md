@@ -7,7 +7,7 @@ A Windows tray icon that lists the servers on an OMI Lobby, so you can join an O
 The tray reads the lobby's list from `GET /api/v1/lobby/servers` at start, every 10 minutes after that (the lobby polls its servers at the same rate), and when you pick **Refresh now**. The menu shows:
 
 - How many servers are up and how many players are online. The icon changes when anyone is online.
-- **Overte**: each domain that is up, as name and players (`Hytrion (0/12)`). Picking one opens `hifi://<address>`, which the Overte installer registers, so Interface starts in that domain.
+- **Overte**: each domain that is up, as name and players (`Hytrion (0/12)`). Picking one opens `hifi://<address>`, which the Overte installer registers, so Interface starts in that domain. With no Overte installed, it copies the address instead and says so.
 - **Basis**: each Basis server that is up. Basis has no link that opens a server, so picking one copies its address (`server1.basisvr.org:4296`) to the clipboard to paste into Basis.
 - **Open the lobby page** and **Quit**.
 
