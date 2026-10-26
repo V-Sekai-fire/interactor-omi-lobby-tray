@@ -30,12 +30,12 @@ jobs:
         shell: pwsh
         run: |
           cmake --install build --config Release --prefix omi-lobby-tray
-          Compress-Archive -Path omi-lobby-tray/* -DestinationPath omi-lobby-tray-windows-x64.zip
+          Compress-Archive -Path omi-lobby-tray/* -DestinationPath omi-lobby-tray-x64.zip
       # Every run's program, so a pull request's tray can be tried on a desk before it merges.
       - uses: actions/upload-artifact@v4
         with:
-          name: omi-lobby-tray-windows-x64
-          path: omi-lobby-tray-windows-x64.zip
+          name: omi-lobby-tray-x64
+          path: omi-lobby-tray-x64.zip
           retention-days: 14
       - name: Tray run, unchecked
         run: echo "UNCHECKED 1 - the tray is built and its list logic tested; no desktop session shows the icon here"
@@ -46,4 +46,4 @@ jobs:
         shell: bash
         run: |
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes ""
-          gh release upload "$GITHUB_REF_NAME" omi-lobby-tray-windows-x64.zip --clobber
+          gh release upload "$GITHUB_REF_NAME" omi-lobby-tray-x64.zip --clobber
