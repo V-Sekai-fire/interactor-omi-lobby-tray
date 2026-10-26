@@ -1,5 +1,7 @@
 # interactor-omi-lobby-tray
 
+![OMI Lobby Tray logo: a stack of three servers inside a dashed purple ring; filled green lights and a thick ring mean players are online, hollow lights and a thin ring mean nobody is](resources/omi-lobby-tray-logo.png)
+
 **Join an Overte or Basis server from the taskbar.**
 
 Who is online, and where do you go? A Windows tray icon that lists the servers on an OMI Lobby, so you can join an Overte domain or a Basis server from the taskbar. It is the desktop companion to [service-omi-lobby](https://github.com/V-Sekai-fire/service-omi-lobby).
@@ -42,8 +44,8 @@ CI builds on Windows, runs the tests and keeps `omi-lobby-tray-windows-x64.zip` 
 
 ## Where it comes from
 
-The tray is extracted from [interactor-xr-pilot](https://github.com/V-Sekai-fire/interactor-xr-pilot)'s OXRSys tray: the same SDL3 tray, the same icons, and its JSON reader (`src/Json.*`). The OpenXR runtime parts stay in XR Pilot.
+The tray is extracted from [interactor-xr-pilot](https://github.com/V-Sekai-fire/interactor-xr-pilot)'s OXRSys tray: the same SDL3 tray and its JSON reader (`src/Json.*`). The OpenXR runtime parts stay in XR Pilot.
 
 ## Licence
 
-Apache-2.0 OR MIT (`LICENSE-APACHE`, `LICENSE-MIT`). The icons in `resources/` come from XR Pilot's tray, which is MPL-2.0 like the OXRSys tray it was ported from.
+Apache-2.0 OR MIT (`LICENSE-APACHE`, `LICENSE-MIT`). The icons in `resources/` are new and use the same licence.

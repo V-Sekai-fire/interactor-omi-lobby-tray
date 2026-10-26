@@ -2,7 +2,7 @@
 //
 // OMI Lobby Tray: a tray icon listing the servers on an OMI Lobby (service-omi-lobby), so a player can
 // join an Overte domain or a Basis server from the taskbar. The tray itself is SDL3's, as in
-// interactor-xr-pilot's OXRSys tray, whose icons it also uses.
+// interactor-xr-pilot's OXRSys tray.
 
 #include "Fetch.h"
 #include "Lobby.h"
