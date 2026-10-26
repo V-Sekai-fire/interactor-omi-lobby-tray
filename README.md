@@ -1,6 +1,8 @@
 # interactor-omi-lobby-tray
 
-A Windows tray icon that lists the servers on an OMI Lobby, so you can join an Overte domain or a Basis server from the taskbar. It is the desktop companion to [service-omi-lobby](https://github.com/V-Sekai-fire/service-omi-lobby).
+**Join an Overte or Basis server from the taskbar.**
+
+Who is online, and where do you go? A Windows tray icon that lists the servers on an OMI Lobby, so you can join an Overte domain or a Basis server from the taskbar. It is the desktop companion to [service-omi-lobby](https://github.com/V-Sekai-fire/service-omi-lobby).
 
 ## What it does
 
@@ -13,6 +15,10 @@ The tray reads the lobby's list from `GET /api/v1/lobby/servers` at start, every
 - **Open the lobby page** and **Quit**.
 
 When a refresh fails, the menu keeps the last list and the status line says why. A second start leaves the first icon in charge.
+
+## Try it
+
+Unzip `omi-lobby-tray-windows-x64.zip` anywhere and run `omi-lobby-tray.exe`. Pick a server from the tray menu.
 
 ## Which lobby
 
@@ -32,7 +38,7 @@ ctest --test-dir build -C Release
 
 CMake fetches SDL3 (release-3.4.8, the tray library XR Pilot uses) and links it statically, so the program is one file plus `resources/`. `-DOMI_LOBBY_TRAY_APP=OFF` builds only the list logic and its tests, with no SDL. On Windows the tray fetches with WinHTTP; other systems, used for development only, run `curl`.
 
-CI builds on Windows, runs the tests and keeps `omi-lobby-tray-windows-x64.zip` as an artifact of every run; a `v*` tag attaches it to the release. Unzip it anywhere and run `omi-lobby-tray.exe`.
+CI builds on Windows, runs the tests and keeps `omi-lobby-tray-windows-x64.zip` as an artifact of every run; a `v*` tag attaches it to the release.
 
 ## Where it comes from
 
