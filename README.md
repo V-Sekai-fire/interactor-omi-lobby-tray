@@ -1,6 +1,6 @@
 # interactor-omi-lobby-tray
 
-![OMI Lobby Tray logo: a stack of three servers inside a dashed purple ring; filled green lights and a thick ring mean players are online, hollow lights and a thin ring mean nobody is](resources/omi-lobby-tray-logo.png)
+![OMI lobby wordmark: the OMI Group's two rings beside OMI in bold type and lobby in light type](resources/omi-lobby-wordmark.png)
 
 **Join an Overte or Basis server from the taskbar.**
 
@@ -48,4 +48,4 @@ The tray is extracted from [interactor-xr-pilot](https://github.com/V-Sekai-fire
 
 ## Licence
 
-Apache-2.0 OR MIT (`LICENSE-APACHE`, `LICENSE-MIT`). The icons in `resources/` are new and use the same licence.
+Apache-2.0 OR MIT (`LICENSE-APACHE`, `LICENSE-MIT`). The icons in `resources/` are new and use the same licence. The rings are copied from the logo of the [Open Metaverse Interoperability Group](https://omigroup.org/).
