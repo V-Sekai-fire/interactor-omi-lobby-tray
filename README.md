@@ -38,7 +38,7 @@ cmake --build build --config Release
 ctest --test-dir build -C Release
 ```
 
-CMake fetches SDL3 (release-3.4.8, the tray library XR Pilot uses) and links it statically, so the program is one file plus `resources/`. `-DOMI_LOBBY_TRAY_APP=OFF` builds only the list logic and its tests, with no SDL. On Windows the tray fetches with WinHTTP; other systems, used for development only, run `curl`.
+CMake fetches SDL3 (release-3.4.8, the tray library XR Pilot uses) and links it statically, so the program is one file plus `resources/`. `-DOMI_LOBBY_TRAY_APP=OFF` builds only the list logic and its tests, with no SDL. The tray fetches with the operating system's own HTTP library; other systems, used for development only, run `curl`.
 
 CI builds the program, runs the tests and keeps `omi-lobby-tray-x64.zip` as an artifact of every run; a `v*` tag attaches it to the release.
 
