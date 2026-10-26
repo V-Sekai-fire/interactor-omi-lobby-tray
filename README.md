@@ -18,7 +18,7 @@ When a refresh fails, the menu keeps the last list and the status line says why.
 
 ## Try it
 
-Unzip `omi-lobby-tray-windows-x64.zip` anywhere and run `omi-lobby-tray.exe`. Pick a server from the tray menu.
+Unzip `omi-lobby-tray-windows-x64.zip` anywhere and run `omi-lobby-tray.exe`.
 
 ## Which lobby
 
